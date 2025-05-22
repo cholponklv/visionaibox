@@ -80,5 +80,8 @@ class Alert(models.Model):
             self.company = self.device.company
         super().save(*args, **kwargs)
 
+    def get_executive_users(self):
+        return list(self.executive_users.values_list("id", flat=True))
+
     def __str__(self):
         return f"Тревога {self.aibox_alert_id}"

@@ -44,15 +44,15 @@ class AlertViewSet(ActionSerializerClassMixin,
         action = serializer.validated_data["action"]
 
         if action == "confirm":
-            alert.confirm_alert()
+            alert.confirm_alert(user=request.user)
 
             # Отправка учредителям
             send_alert_to_bot(alert, request, for_security=False)
 
-            return Response({"message": "Тревога подтверждена"}, status=status.HTTP_200_OK)
+            return Response({"message": "Тревога подтверждена","executive_users": alert.get_executive_users(),}, status=status.HTTP_200_OK)
 
         elif action == "reject":
-            alert.reject_alert()
+            alert.reject_alert(user=request.user)
             alert.save()
 
             return Response({"message": "Тревога отклонена"}, status=status.HTTP_200_OK)

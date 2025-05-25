@@ -9,7 +9,7 @@ from tgbot.services import send_alert_to_bot
 from visionaibox.mixins import ActionSerializerClassMixin
 from .models import Alert
 from .serializers import AlertSerializer, AlertCreateSerializer, AlertActionSerializer
-
+from users.models import User
 
 class AlertViewSet(ActionSerializerClassMixin,
                    mixins.CreateModelMixin,

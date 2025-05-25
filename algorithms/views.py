@@ -34,27 +34,27 @@ class AlertViewSet(ActionSerializerClassMixin,
 
     @action(detail=True, methods=["post"], url_path="send-action")
     def send_action(self, request, pk=None):
-        """
-        Подтверждение или отклонение тревоги
-        """
         alert = self.get_object()
         serializer = AlertActionSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
         action = serializer.validated_data["action"]
+        telegram_id = request.data.get("telegram_id")
+        print(request.data)
+
+        user = User.objects.filter(telegram_id=telegram_id).first()
 
         if action == "confirm":
-            alert.confirm_alert(user=request.user)
-
-            # Отправка учредителям
+            alert.confirm_alert(user=user)
             send_alert_to_bot(alert, request, for_security=False)
-
-            return Response({"message": "Тревога подтверждена","executive_users": alert.get_executive_users(),}, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Тревога подтверждена",
+                "executive_users": alert.get_executive_users(),
+            }, status=status.HTTP_200_OK)
 
         elif action == "reject":
-            alert.reject_alert(user=request.user)
-            alert.save()
-
+            alert.reject_alert(user=user)
             return Response({"message": "Тревога отклонена"}, status=status.HTTP_200_OK)
 
         return Response({"error": "Неверное действие"}, status=status.HTTP_400_BAD_REQUEST)

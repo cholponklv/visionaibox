@@ -23,14 +23,26 @@ class AlertViewSet(ActionSerializerClassMixin,
     }
 
     def create(self, request, *args, **kwargs):
-        """Создание тревоги с кастомным ответом в формате AIBox"""
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             alert = serializer.save()
+
+            executives = User.objects.filter(company=alert.company, is_executive=True)
+            alert.executive_users.set(executives)
+
             send_alert_to_bot(alert, request, for_security=True)
-            return Response({"error_code": 0, "message": "alert push successful", "data": None}, status=status.HTTP_201_CREATED)
+            return Response({
+                "error_code": 0,
+                "message": "alert push successful",
+                "data": None
+            }, status=status.HTTP_201_CREATED)
         else:
-            return Response({"error_code": -1, "message": "client error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "error_code": -1,
+                "message": "client error",
+                "data": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 
     @action(detail=True, methods=["post"], url_path="send-action")
     def send_action(self, request, pk=None):

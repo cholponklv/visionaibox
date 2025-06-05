@@ -10,6 +10,8 @@ from visionaibox.mixins import ActionSerializerClassMixin
 from .models import Alert
 from .serializers import AlertSerializer, AlertCreateSerializer, AlertActionSerializer
 from users.models import User
+from rest_framework.decorators import api_view
+from django.db.models import Count, Q
 
 class AlertViewSet(ActionSerializerClassMixin,
                    mixins.CreateModelMixin,
@@ -72,3 +74,32 @@ class AlertViewSet(ActionSerializerClassMixin,
             return Response({"message": "Тревога отклонена"}, status=status.HTTP_200_OK)
 
         return Response({"error": "Неверное действие"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def alert_stats(request):
+    total_alerts = Alert.objects.count()
+    confirmed_alerts = Alert.objects.filter(status="confirmed").count()  # адаптируй статус под свою модель
+
+    algorithm_data = (
+        Alert.objects
+        .values("alg__name")
+        .annotate(
+            total=Count("id"),
+            confirmed=Count("id", filter=Q(status="confirmed"))
+        )
+        .order_by("-total")
+    )
+
+    return Response({
+        "total_alerts": total_alerts,
+        "confirmed_alerts": confirmed_alerts,
+        "algorithms": [
+            {
+                "name": item["alg__name"],
+                "total": item["total"],
+                "confirmed": item["confirmed"]
+            }
+            for item in algorithm_data
+        ]
+    })

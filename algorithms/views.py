@@ -83,13 +83,13 @@ def alert_stats(request):
 
     if period == "day":
         start_time = now() - timedelta(days=1)
-        alerts = alerts.filter(created_at__gte=start_time)
+        alerts = alerts.filter(alert_time__gte=start_time)
     elif period == "week":
         start_time = now() - timedelta(days=7)
-        alerts = alerts.filter(created_at__gte=start_time)
+        alerts = alerts.filter(alert_time__gte=start_time)
     elif period == "month":
         start_time = now() - timedelta(days=30)
-        alerts = alerts.filter(created_at__gte=start_time)
+        alerts = alerts.filter(alert_time__gte=start_time)
 
     total_alerts = alerts.count()
     confirmed_alerts = alerts.filter(status="confirmed").count()

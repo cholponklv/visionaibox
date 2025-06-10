@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework import viewsets, status, mixins
 from rest_framework.response import Response
 from rest_framework.decorators import action
-
+from django.utils.timezone import now, timedelta
 from tgbot.services import send_alert_to_bot
 from visionaibox.mixins import ActionSerializerClassMixin
 from .models import Alert
@@ -78,11 +78,24 @@ class AlertViewSet(ActionSerializerClassMixin,
 
 @api_view(["GET"])
 def alert_stats(request):
-    total_alerts = Alert.objects.count()
-    confirmed_alerts = Alert.objects.filter(status="confirmed").count()  # адаптируй статус под свою модель
+    period = request.GET.get("period", "all")  # all, day, week, month
+    alerts = Alert.objects.all()
+
+    if period == "day":
+        start_time = now() - timedelta(days=1)
+        alerts = alerts.filter(created_at__gte=start_time)
+    elif period == "week":
+        start_time = now() - timedelta(days=7)
+        alerts = alerts.filter(created_at__gte=start_time)
+    elif period == "month":
+        start_time = now() - timedelta(days=30)
+        alerts = alerts.filter(created_at__gte=start_time)
+
+    total_alerts = alerts.count()
+    confirmed_alerts = alerts.filter(status="confirmed").count()
 
     algorithm_data = (
-        Alert.objects
+        alerts
         .values("alg__name")
         .annotate(
             total=Count("id"),

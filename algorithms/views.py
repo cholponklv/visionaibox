@@ -12,6 +12,8 @@ from .serializers import AlertSerializer, AlertCreateSerializer, AlertActionSeri
 from users.models import User
 from rest_framework.decorators import api_view
 from django.db.models import Count, Q
+from datetime import datetime, timedelta
+from django.utils.timezone import now
 
 class AlertViewSet(ActionSerializerClassMixin,
                    mixins.CreateModelMixin,
@@ -75,13 +77,25 @@ class AlertViewSet(ActionSerializerClassMixin,
 
         return Response({"error": "Неверное действие"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(["GET"])
 def alert_stats(request):
-    period = request.GET.get("period", "all")  # all, day, week, month
+    period = request.GET.get("period", "all")
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+
     alerts = Alert.objects.all()
 
-    if period == "day":
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            alerts = alerts.filter(
+                alert_time__date__gte=start_date.date(),
+                alert_time__date__lte=end_date.date()
+            )
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+    elif period == "day":
         start_time = now() - timedelta(days=1)
         alerts = alerts.filter(alert_time__gte=start_time)
     elif period == "week":
